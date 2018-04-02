@@ -20,7 +20,7 @@ from flask_appbuilder.models.decorators import renders
 from flask_babel import lazy_gettext as _
 from pydruid.client import PyDruid
 from pydruid.utils.aggregators import count
-from pydruid.utils.filters import Bound, Dimension, Filter
+from pydruid.utils.filters import Dimension, Filter
 from pydruid.utils.having import Aggregation
 from pydruid.utils.postaggregator import (
     Const, Field, HyperUniqueCardinality, Postaggregator, Quantile, Quantiles,
@@ -963,7 +963,11 @@ class DruidDatasource(Model, BaseDatasource):
                     if isinstance(dim, dict) and 'extractionFn' in dim:
                         (col, extraction_fn) = DruidDatasource._create_extraction_fn(dim)
                         dim_val = dim['outputName']
-                        f = Filter(dimension=col, value=row[dim_val], extraction_function=extraction_fn)
+                        f = Filter(
+                            dimension=col,
+                            value=row[dim_val],
+                            extraction_function=extraction_fn
+                        )
                     elif isinstance(dim, dict):
                         dim_val = dim['outputName']
                         if dim_val:
@@ -1206,7 +1210,9 @@ class DruidDatasource(Model, BaseDatasource):
 
                 # Can't use set on an array with dicts
                 # Use set with non-dict items only
-                non_dict_dims = list(set([x for x in pre_qry_dims if not isinstance(x, dict)]))
+                non_dict_dims = list(
+                    set([x for x in pre_qry_dims if not isinstance(x, dict)])
+                )
                 dict_dims = [x for x in pre_qry_dims if isinstance(x, dict)]
                 pre_qry['dimensions'] = non_dict_dims + dict_dims
 
@@ -1364,7 +1370,8 @@ class DruidDatasource(Model, BaseDatasource):
                     eq = [utils.string_to_num(v) for v in eq]
                 else:
                     eq = utils.string_to_num(eq)
-            # For these two ops, could have used Dimension, but it doesn't support extraction functions
+            # For these two ops, could have used Dimension,
+            # but it doesn't support extraction functions
             if op == '==':
                 cond = Filter(dimension=col, value=eq, extraction_function=extraction_fn)
             elif op == '!=':
@@ -1375,9 +1382,15 @@ class DruidDatasource(Model, BaseDatasource):
                 # ignore the filter if it has no value
                 if not len(eq):
                     continue
-                # if it uses an extraction fn, use the "in" operator as Dimension isn't supported
+                # if it uses an extraction fn, use the "in" operator
+                # as Dimension isn't supported
                 elif extraction_fn is not None:
-                    cond = Filter(dimension=col, values=eq, type="in", extraction_function=extraction_fn)
+                    cond = Filter(
+                        dimension=col,
+                        values=eq,
+                        type="in",
+                        extraction_function=extraction_fn
+                    )
                 elif len(eq) == 1:
                     cond = Dimension(col) == eq[0]
                 else:
@@ -1389,9 +1402,15 @@ class DruidDatasource(Model, BaseDatasource):
                     cond = ~cond
 
             elif op == 'regex':
-                cond = Filter(extraction_function=extraction_fn, type='regex', pattern=eq, dimension=col)
+                cond = Filter(
+                    extraction_function=extraction_fn,
+                    type='regex',
+                    pattern=eq,
+                    dimension=col
+                )
 
-            # For the ops below, could have used pydruid's Bound, but it doesn't support extraction functions
+            # For the ops below, could have used pydruid's Bound,
+            # but it doesn't support extraction functions
             elif op == '>=':
                 cond = Filter(
                     type='bound',
